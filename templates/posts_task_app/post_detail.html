@@ -1,0 +1,4 @@
+<div>"{{ post.title }}"</div>
+<div>{{ post.text }}</div>
+<div>{{ post.user }}, posted at {{ post.create_at }}</div>
+<div><a href="{% url 'posts_task_app:posts-list' %}">Back to posts</a></div>

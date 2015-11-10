@@ -1,0 +1,7 @@
+<div>Create an account</div>
+<form action="{% url 'posts_task_app:register' %}" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Create the account">
+</form>
+<div><a href="{% url 'posts_task_app:login' %}">Back to login</a></div>

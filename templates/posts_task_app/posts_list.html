@@ -1,0 +1,6 @@
+<div>Posts</div>
+{% for post in posts %}
+    <li><a href="{% url 'posts_task_app:post-detail' post.id %}">"{{ post.title }}"</a></li>
+{% endfor %}
+<div><a href="{% url 'posts_task_app:post-create' %}">Add new post</a></div>
+<div>Logged as {{ request.user }} <a href="{% url 'posts_task_app:logout' %}">logout</a></div>

@@ -1,0 +1,17 @@
+<form action='.' method='post'>
+    {% csrf_token %}
+    {{ form.username.label_tag }}
+    {{ form.username }}
+    {{ form.username.errors }}
+    {{ form.password.label_tag }}
+    {{ form.password }}
+    {{ form.password.errors }}
+    {% if not form.username.errors and not form.password.errors %}
+        {% for error in form.non_field_errors %}
+            {{ error }}
+        {% endfor %}
+    {% endif %}
+    <input type="submit" value="login" />
+    <input type="hidden" name="next" value="{{ next }}" />
+</form>
+<div><a href="{% url 'posts_task_app:register' %}">Registration</a></div>
