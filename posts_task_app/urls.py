@@ -1,32 +1,30 @@
 from django.conf.urls import url
-from django.contrib.auth.views import login, logout
-
+from django.contrib.auth.forms import AuthenticationForm
 from . import views
 
 urlpatterns = [
 
     url(r'^accounts/login/$',
-        login,
+        views.Login.as_view(form_class=AuthenticationForm),
         name='login'),
 
     url(r'^accounts/logout/$',
-        logout,
+        views.LogoutView.as_view(),
         name='logout'),
 
     url(r'^accounts/register/$',
-        views.register,
+        views.RegisterUser.as_view(),
         name='register'),
 
-    url(r'^posts-list/$',
-        views.posts_list,
-        name='posts-list'),
+    url(r'^post-list/$',
+        views.PostList.as_view(),
+        name='post-list'),
 
-    url(r'^(?P<post_id>[0-9]+)/$',
-        views.post_detail,
+    url(r'^post-list/(?P<pk>[0-9]+)/$',
+        views.PostDetail.as_view(),
         name='post-detail'),
 
-    url(r'^post-create/$',
-        views.post_create,
+    url(r'^post-list/post-create/$',
+        views.PostCreate.as_view(),
         name='post-create'),
-
 ]

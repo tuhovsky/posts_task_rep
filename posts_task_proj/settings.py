@@ -110,4 +110,4 @@ AUTH_USER_MODEL = 'posts_task_app.User'
 
 LOGIN_URL = '/posts-task-app/accounts/login/'
 
-LOGIN_REDIRECT_URL = '/posts-task-app/posts-list/'
+LOGIN_REDIRECT_URL = '/posts-task-app/post-list/'

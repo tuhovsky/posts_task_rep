@@ -1,5 +1,5 @@
 <div>Posts</div>
-{% for post in posts %}
+{% for post in post_list %}
     <li><a href="{% url 'posts_task_app:post-detail' post.id %}">"{{ post.title }}"</a></li>
 {% endfor %}
 <div><a href="{% url 'posts_task_app:post-create' %}">Add new post</a></div>
