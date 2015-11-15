@@ -2,8 +2,9 @@
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse
-from .models import User, Post
-from .views import PostList
+from django.contrib.auth.models import User
+
+from .models import Post
 
 
 class TestAuthorizationBaseClass(TestCase):
@@ -116,60 +117,13 @@ class TestPostCreate(TestAuthorizationBaseClass):
             title=valid_post_data['title']).exists())
 
         # tests that post was created by authenticated user
-        self.assertTrue(Post.objects.get(
-            title=valid_post_data['title']).user == self.user and
-            self.user.is_authenticated())
+        self.assertEquals(Post.objects.last().user, self.user)
 
-    def test_too_much_long_post_text(self):
+    def test_too_long_text(self):
         self.client.login(**self.user_data)
         invalid_post_data = dict(
             title='title',
             text='text' * 2000
         )
-        response = self.client.post(
-            self.url, invalid_post_data
-        )
-        self.assertFalse(Post.objects.filter(
-            title=invalid_post_data['title']).exists())
-
-
-class TestAuthorization(TestCase):
-
-    user_data = dict(
-        username='user',
-        password='password'
-    )
-
-    def setUp(self):
-        super().setUp()
-        self.user = User.objects.create_user(**self.user_data)
-
-    def test_user_authorizated(self):
-        response = self.client.login(**self.user_data)
-
-        # login() returns True if it the credentials were accepted
-        # and login was successful.
-        # that's why next accertion tests that user was logged in
-        self.assertTrue(response and self.user.is_authenticated())
-
-        self.user.username = "newuser"
-        self.user.save()
-        response = self.client.login(**self.user_data)
-
-        # username is changed, and now user cannot login wiht old username
-        self.assertFalse(response)
-
-
-# class TestRegister(TestCase):
-
-#     url = reverse('posts_task_app:register')
-#     user_data = dict(
-#         username='user',
-#         password='password'
-#     )
-
-#     def setUp(self):
-#         super().setUp()
-#         self.user = User.objects.create_user(**self.user_data)
-
-#     def test_register_user(self):
+        self.client.post(self.url, invalid_post_data)
+        self.assertFalse(Post.objects.exists())

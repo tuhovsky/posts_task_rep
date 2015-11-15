@@ -20,6 +20,5 @@ class PostForm(ModelForm):
         model = Post
 
         fields = [
-            'title',
-            'text',
+            'title', 'text',
         ]

@@ -2,27 +2,9 @@
 from django.core.urlresolvers import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django.views.generic import ListView, DetailView, CreateView, FormView
-from django.contrib.auth.forms import AuthenticationForm
+from django.views.generic import FormView, ListView, DetailView, CreateView
 from .forms import UserCreationForm, PostForm
-from class_based_auth_views.views import LoginView
 from .models import User, Post
-
-
-class Login(LoginView):
-
-    form_class = AuthenticationForm
-
-    def get_context_data(self, **kwargs):
-        """
-        Add to context 'next' for redirect after success auth
-
-        """
-        context = super().get_context_data(**kwargs)
-        next_value = self.request.GET.get('next')
-        if next_value:
-            context['next'] = next_value
-        return context
 
 
 class LoginRequiredMixin:

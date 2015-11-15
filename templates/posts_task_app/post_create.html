@@ -2,7 +2,6 @@
 <form action="{% url 'posts_task_app:post-create' %}" method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    {{ form.title.errors }}
      <input type="submit" value="Post" />
 </form>
 <div><a href="{% url 'posts_task_app:post-list' %}">Back to posts</a></div>
