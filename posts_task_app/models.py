@@ -1,15 +1,7 @@
+# -*- coding: utf-8 -*-
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import User
 from django.core.validators import MaxLengthValidator
-
-
-AbstractUser._meta.get_field('email')._unique = True
-AbstractUser._meta.get_field('email').blank = False
-
-
-class User(AbstractUser):
-
-    pass
 
 
 class Post(models.Model):

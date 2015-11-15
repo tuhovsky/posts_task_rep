@@ -1,7 +1,7 @@
+# -*- coding: utf-8 -*-
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse
-
 from .models import User, Post
 from .views import PostList
 
@@ -15,26 +15,161 @@ class TestAuthorizationBaseClass(TestCase):
 
     def test_response_code_401_or_302(self):
         response = self.client.get(self.url)
-        self.assertEquals(response.status_code, 302)
+
+        # tests that response status code is 401 or 302
+        self.assertIn(response.status_code, (401, 302))
 
 
 class TestPostList(TestAuthorizationBaseClass):
 
     url = reverse('posts_task_app:post-list')
+    user_data = dict(
+        username='user',
+        password='password'
+    )
 
     def setUp(self):
-        self.user = User.objects.create(username='user_1',
-                                        email='user_1@gmail.com',
-                                        password='111111',)
-        self.user.posts.create(title='post_1_title', text='post_1_text')
-        self.user.posts.create(title='post_2_title', text='post_2_text')
-        self.user.posts.create(title='post_3_title', text='post_3_text')
+        super().setUp()
+        self.user = User.objects.create_user(**self.user_data)
+        posts = []
+        for _ in range(3):
+            posts.append(
+                Post(
+                    title='title',
+                    text='text',
+                    user=self.user
+                )
+            )
+        Post.objects.bulk_create(posts)
 
     def test_get_post_list(self):
-
-        self.client.login(username='user_1', password='111111')
+        self.client.login(**self.user_data)
         response = self.client.get(self.url)
-        self.assertEquals(response.status_code, 302)
-        self.assertEquals(len(response.context['object_list']), 3)
 
-# Create your tests here.
+        # tests that response status code 200
+        self.assertEquals(response.status_code, 200)
+
+        # tests that response has every post info
+        for post in Post.objects.all():
+            self.assertContains(response, post.title)
+
+
+class TestPostDetail(TestAuthorizationBaseClass):
+
+    user_data = dict(
+        username='user',
+        password='password'
+    )
+    post_data = dict(
+        title='title',
+        text='text'
+    )
+
+    def setUp(self):
+        super().setUp()
+        self.post_data['user'] = self.user = User.objects.create_user(
+            **self.user_data)
+        self.post = Post.objects.create(**self.post_data)
+
+    def test_get_post_detail(self):
+        self.client.login(**self.user_data)
+        response = self.client.get(reverse('posts_task_app:post-detail',
+                                           args=(self.post.id,)))
+
+        # tests that response status code 200
+        self.assertEquals(response.status_code, 200)
+
+        # tests that response has post info
+        self.assertContains(response, self.post.title)
+
+
+class TestPostCreate(TestAuthorizationBaseClass):
+
+    url = reverse('posts_task_app:post-create')
+    user_data = dict(
+        username='user',
+        password='password'
+    )
+    valid_post_data = dict(
+        title='title',
+        text='text'
+    )
+
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(**self.user_data)
+
+    def test_post_create(self):
+        self.client.login(**self.user_data)
+        valid_post_data = dict(
+            title='title',
+            text='text'
+        )
+        response = self.client.post(
+            self.url, valid_post_data
+        )
+        # tests that response status code is 200 or 302
+        self.assertIn(response.status_code, (200, 302))
+
+        # tests that created post exist in the database
+        self.assertTrue(Post.objects.filter(
+            title=valid_post_data['title']).exists())
+
+        # tests that post was created by authenticated user
+        self.assertTrue(Post.objects.get(
+            title=valid_post_data['title']).user == self.user and
+            self.user.is_authenticated())
+
+    def test_too_much_long_post_text(self):
+        self.client.login(**self.user_data)
+        invalid_post_data = dict(
+            title='title',
+            text='text' * 2000
+        )
+        response = self.client.post(
+            self.url, invalid_post_data
+        )
+        self.assertFalse(Post.objects.filter(
+            title=invalid_post_data['title']).exists())
+
+
+class TestAuthorization(TestCase):
+
+    user_data = dict(
+        username='user',
+        password='password'
+    )
+
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(**self.user_data)
+
+    def test_user_authorizated(self):
+        response = self.client.login(**self.user_data)
+
+        # login() returns True if it the credentials were accepted
+        # and login was successful.
+        # that's why next accertion tests that user was logged in
+        self.assertTrue(response and self.user.is_authenticated())
+
+        self.user.username = "newuser"
+        self.user.save()
+        response = self.client.login(**self.user_data)
+
+        # username is changed, and now user cannot login wiht old username
+        self.assertFalse(response)
+
+
+# class TestRegister(TestCase):
+
+#     url = reverse('posts_task_app:register')
+#     user_data = dict(
+#         username='user',
+#         password='password'
+#     )
+
+#     def setUp(self):
+#         super().setUp()
+#         self.user = User.objects.create_user(**self.user_data)
+
+#     def test_register_user(self):

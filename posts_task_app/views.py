@@ -1,19 +1,21 @@
+# -*- coding: utf-8 -*-
 from django.core.urlresolvers import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, DetailView, CreateView, FormView
-
-from .models import User, Post
+from django.contrib.auth.forms import AuthenticationForm
 from .forms import UserCreationForm, PostForm
-from class_based_auth_views.views import LoginView, LogoutView
+from class_based_auth_views.views import LoginView
+from .models import User, Post
 
 
 class Login(LoginView):
 
+    form_class = AuthenticationForm
+
     def get_context_data(self, **kwargs):
         """
-        Добавляет в контекст параметр "next" для редиректа на запрашиваемый url
-        после успешной авторизации
+        Add to context 'next' for redirect after success auth
 
         """
         context = super().get_context_data(**kwargs)
@@ -24,12 +26,6 @@ class Login(LoginView):
 
 
 class LoginRequiredMixin:
-    """
-    Чтобы не повторять постоянно логин_реквайд, а просто добавлять
-    примесь к классу, наследуем эту примесь в классах, где нужна проверка
-    авторизации
-
-    """
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):

@@ -1,15 +1,17 @@
+# -*- coding: utf-8 -*-
 from django.conf.urls import url
-from django.contrib.auth.forms import AuthenticationForm
+from class_based_auth_views.views import LogoutView
+
 from . import views
 
 urlpatterns = [
 
     url(r'^accounts/login/$',
-        views.Login.as_view(form_class=AuthenticationForm),
+        views.Login.as_view(),
         name='login'),
 
     url(r'^accounts/logout/$',
-        views.LogoutView.as_view(),
+        LogoutView.as_view(),
         name='logout'),
 
     url(r'^accounts/register/$',
