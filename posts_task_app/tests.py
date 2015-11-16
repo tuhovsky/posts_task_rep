@@ -2,18 +2,26 @@
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 from .models import Post
 
 
-class TestAuthorizationBaseClass(TestCase):
+User = get_user_model()
+
+
+USER_DATA = dict(
+    username='username',
+    email='username@gmail.com',
+    password='password'
+)
+
+
+class CheckAuthorizationBase:
     """
     Checks auth
 
     """
-
-    url = reverse('posts_task_app:post-list')
 
     def setUp(self):
         self.client = Client()
@@ -25,7 +33,7 @@ class TestAuthorizationBaseClass(TestCase):
         self.assertIn(response.status_code, (302, 401))
 
 
-class TestPostList(TestAuthorizationBaseClass):
+class TestPostList(CheckAuthorizationBase, TestCase):
     """
     Tests get post list
 
@@ -33,14 +41,9 @@ class TestPostList(TestAuthorizationBaseClass):
 
     url = reverse('posts_task_app:post-list')
 
-    user_data = dict(
-        username='user',
-        password='password'
-    )
-
     def setUp(self):
         super().setUp()
-        self.user = User.objects.create_user(**self.user_data)
+        self.user = User.objects.create_user(**USER_DATA)
         posts = []
         for _ in range(3):
             posts.append(
@@ -53,7 +56,7 @@ class TestPostList(TestAuthorizationBaseClass):
         Post.objects.bulk_create(posts)
 
     def test_get_post_list(self):
-        self.client.login(**self.user_data)
+        self.client.login(**USER_DATA)
         response = self.client.get(self.url)
 
         # tests that response status code is 200
@@ -64,16 +67,12 @@ class TestPostList(TestAuthorizationBaseClass):
             self.assertContains(response, post.title)
 
 
-class TestPostDetail(TestAuthorizationBaseClass):
+class TestPostDetail(CheckAuthorizationBase, TestCase):
     """
     Tests get post detail
 
     """
 
-    user_data = dict(
-        username='user',
-        password='password'
-    )
     post_data = dict(
         title='title',
         text='text'
@@ -82,13 +81,13 @@ class TestPostDetail(TestAuthorizationBaseClass):
     def setUp(self):
         super().setUp()
         self.post_data['user'] = self.user = User.objects.create_user(
-            **self.user_data)
+            **USER_DATA)
         self.post = Post.objects.create(**self.post_data)
+        self.url = reverse('posts_task_app:post-detail', args=(self.post.id,))
 
     def test_get_post_detail(self):
-        self.client.login(**self.user_data)
-        response = self.client.get(reverse('posts_task_app:post-detail',
-                                           args=(self.post.id,)))
+        self.client.login(**USER_DATA)
+        response = self.client.get(self.url)
 
         # tests that response status code is 200
         self.assertEquals(response.status_code, 200)
@@ -97,7 +96,7 @@ class TestPostDetail(TestAuthorizationBaseClass):
         self.assertContains(response, self.post.title)
 
 
-class TestPostCreate(TestAuthorizationBaseClass):
+class TestPostCreate(CheckAuthorizationBase, TestCase):
     """
     Tests post creation, existing in the database, created by
     and invalid post creation
@@ -106,10 +105,6 @@ class TestPostCreate(TestAuthorizationBaseClass):
 
     url = reverse('posts_task_app:post-create')
 
-    user_data = dict(
-        username='user',
-        password='password'
-    )
     valid_post_data = dict(
         title='title',
         text='text'
@@ -121,10 +116,10 @@ class TestPostCreate(TestAuthorizationBaseClass):
 
     def setUp(self):
         super().setUp()
-        self.user = User.objects.create_user(**self.user_data)
+        self.user = User.objects.create_user(**USER_DATA)
 
     def test_post_create(self):
-        self.client.login(**self.user_data)
+        self.client.login(**USER_DATA)
         response = self.client.post(self.url, self.valid_post_data)
 
         # tests that response status code is 200 or 302
@@ -138,7 +133,7 @@ class TestPostCreate(TestAuthorizationBaseClass):
         self.assertEquals(Post.objects.last().user, self.user)
 
     def test_too_long_text(self):
-        self.client.login(**self.user_data)
+        self.client.login(**USER_DATA)
 
         self.client.post(self.url, self.invalid_post_data)
 
@@ -155,11 +150,6 @@ class TestRegistration(TestCase):
 
     url = reverse('posts_task_app:register')
 
-    user_data = dict(
-        username='username',
-        email='username@gmail.com',
-        password='password'
-    )
     valid_data = dict(
         username='example',
         email='example@gmail.com',
@@ -169,7 +159,7 @@ class TestRegistration(TestCase):
 
     def setUp(self):
         super().setUp()
-        self.user = User.objects.create_user(**self.user_data)
+        self.user = User.objects.create_user(**USER_DATA)
 
     def test_user_created(self):
         response = self.client.post(self.url, self.valid_data)
@@ -184,17 +174,17 @@ class TestRegistration(TestCase):
     def test_username_already_exists(self):
         invalid_data = self.valid_data.copy()
         invalid_data['username'] = self.user.username
-        response = self.client.post(self.url, invalid_data)
+        self.client.post(self.url, invalid_data)
 
         # tests that username is unique and only 1 user with this username
         # exists in the database, self.user
-        self.assertFalse(User.objects.filter(
-            username=invalid_data['username']).count() > 1)
+        self.assertTrue(User.objects.filter(
+            username=invalid_data['username']).count() == 1)
 
     def test_invalid_username(self):
         invalid_data = self.valid_data.copy()
         invalid_data['username'] = 'exa\mple<'
-        response = self.client.post(self.url, invalid_data)
+        self.client.post(self.url, invalid_data)
 
         # tests that user with invalid username doesn't exist in the database
         self.assertFalse(User.objects.filter(
@@ -203,7 +193,7 @@ class TestRegistration(TestCase):
     def test_invalid_email(self):
         invalid_data = self.valid_data.copy()
         invalid_data['email'] = 'example@\<.com'
-        response = self.client.post(self.url, invalid_data)
+        self.client.post(self.url, invalid_data)
 
         # tests that user with invalid email doesn't exist in the database
         self.assertFalse(User.objects.filter(
@@ -212,7 +202,7 @@ class TestRegistration(TestCase):
     def test_invalid_password(self):
         invalid_data = self.valid_data.copy()
         invalid_data['password1'], invalid_data['password2'] = '', ''
-        response = self.client.post(self.url, invalid_data)
+        self.client.post(self.url, invalid_data)
 
         # tests that user with invalid password doesn't exist in the database
         self.assertFalse(User.objects.filter(
@@ -221,7 +211,7 @@ class TestRegistration(TestCase):
     def test_different_passwords(self):
         invalid_data = self.valid_data.copy()
         invalid_data['password1'], invalid_data['password2'] = '12345', '12347'
-        response = self.client.post(self.url, invalid_data)
+        self.client.post(self.url, invalid_data)
 
         # tests that user that entered diff pass1 pass2 doesn't exist in the
         # database
